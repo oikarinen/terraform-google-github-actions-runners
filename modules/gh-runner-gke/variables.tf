@@ -111,18 +111,21 @@ variable "gh_app_pre_defined_secret_name" {
 
 variable "gh_app_id" {
   type        = string
-  description = "After creating the GitHub App, on the GitHub App's page, note the value for \"App ID\"."
+  description = "After creating the GitHub App, on the GitHub App's page, note the value for \"App ID\". Required if enable_secret_manager is false."
+  default     = null
 }
 
 variable "gh_app_installation_id" {
   type        = string
-  description = "You can find the app installation ID on the app installation page, which has the following URL format: `https://github.com/organizations/ORGANIZATION/settings/installations/INSTALLATION_ID`"
+  description = "You can find the app installation ID on the app installation page, which has the following URL format: `https://github.com/organizations/ORGANIZATION/settings/installations/INSTALLATION_ID`. Required if enable_secret_manager is false."
+  default     = null
 }
 
 variable "gh_app_private_key" {
   type        = string
-  description = "Under \"Private keys\", click Generate a private key, and save the .pem file. Use the contents of this file for this variable."
+  description = "Under \"Private keys\", click Generate a private key, and save the .pem file. Use the contents of this file for this variable. Required if enable_secret_manager is false."
   sensitive   = true
+  default     = null
 }
 
 variable "service_account" {
@@ -188,4 +191,43 @@ variable "enable_private_nodes" {
   type        = bool
   description = "Whether nodes have internal IP addresses only."
   default     = false
+}
+
+variable "enable_secret_manager" {
+  type        = bool
+  description = "Whether to enable Secret Manager integration for GitHub App secrets."
+  default     = false
+}
+
+variable "gh_app_secrets" {
+  description = "GitHub App credentials from Secret Manager. Required if enable_secret_manager is true."
+  type = object({
+    app_id = object({
+      secret_name = string
+      project_id  = optional(string)
+      version     = optional(string, "latest")
+    })
+    installation_id = object({
+      secret_name = string
+      project_id  = optional(string)
+      version     = optional(string, "latest")
+    })
+    private_key = object({
+      secret_name = string
+      project_id  = optional(string)
+      version     = optional(string, "latest")
+    })
+  })
+  default = null
+
+  validation {
+    condition     = var.gh_app_secrets != null || var.gh_app_secrets == null
+    error_message = "gh_app_secrets must be provided when enable_secret_manager is true."
+  }
+}
+
+variable "arc_secrets_service_account_name" {
+  type        = string
+  description = "Service account name to use for ARC secrets integration. If not set, the default service account will be used."
+  default     = ""
 }
